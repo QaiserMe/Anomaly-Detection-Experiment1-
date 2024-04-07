@@ -1,8 +1,3 @@
-%{
-Data Loading and Visualization:
-Loads training and test datasets from 'P_Data.mat'.
-Plots the training and test datasets with different markers and colors.
-}%
 
 clear all
 close all
