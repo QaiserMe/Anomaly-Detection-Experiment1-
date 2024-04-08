@@ -1,314 +1,226 @@
-
+% Clear workspace and close all figures
 clear all
 close all
 
+% Load training dataset
+load P_Data.mat
 
-load P_Data.mat  % load training dataset
-
-figure, 
-plot (x_train1(1,1:100), x_train1(2,1:100), 'b+');
+% Plot training dataset
+figure
+plot(x_train1(1,1:100), x_train1(2,1:100), 'b+'); % Plot class 1 data points
 hold on
-plot (x_train1(1,101:200), x_train1(2,101:200), 'r*');
+plot(x_train1(1,101:200), x_train1(2,101:200), 'r*'); % Plot class 2 data points
 hold on
-plot (x_train1(1,201:300), x_train1(2,201:300), 'go');
+plot(x_train1(1,201:300), x_train1(2,201:300), 'go'); % Plot class 3 data points
+xlabel('parameters (in millions)'); % X-axis label
+ylabel('parameters (in millions)'); % Y-axis label
+xlim([0 2.5]); % Set X-axis limits
+ylim([0 2.5]); % Set Y-axis limits
 
-xlabel('parameters (in millions)');
-ylabel('parameters (in millions) ');
-
-xlim([0 2.5]);
-ylim([0 2.5]);
-
-figure, 
-plot (x_test1(1,1:100), x_test1(2,1:100), 'b+');
+% Plot test dataset
+figure
+plot(x_test1(1,1:100), x_test1(2,1:100), 'b+'); % Plot class 1 data points
 hold on
-plot (x_test1(1,101:200), x_test1(2,101:200), 'r*');
+plot(x_test1(1,101:200), x_test1(2,101:200), 'r*'); % Plot class 2 data points
 hold on
-plot (x_test1(1,201:300), x_test1(2,201:300), 'go');
+plot(x_test1(1,201:300), x_test1(2,201:300), 'go'); % Plot class 3 data points
+xlabel('parameters (in millions)'); % X-axis label
+ylabel('parameters (in millions)'); % Y-axis label
+xlim([0 2.5]); % Set X-axis limits
+ylim([0 2.5]); % Set Y-axis limits
 
-xlabel('parameters (in millions)');
-ylabel('parameters (in millions) ');
-xlim([0 2.5]);
-ylim([0 2.5]);
+% Parameters
+num_of_instances = size(x_train1, 2); % Number of training instances
+num_of_instances_test = size(x_test1, 2); % Number of test instances
+x = x_train1; % Input data
+r = r_train1; % Output labels
+x = [ones(1,num_of_instances); x]; % Add bias term to input data
+x_test = [ones(1,num_of_instances_test); x_test1]; % Add bias term to test data
+D = size(x, 1); % Dimensionality of input
+K = size(r, 1); % Number of output neurons
+H = 5; % Number of hidden neurons
+w = rand(D,H) * 0.01 - 0.005; % Initialize weights for input layer
+delta_w = zeros(D,H); % Initialize weight change for input layer
+v = rand(H,K) * 0.01 - 0.005; % Initialize weights for hidden layer
+delta_v = zeros(H,K); % Initialize weight change for hidden layer
+lr = 0.05; % Learning rate
+num_of_epoch = 20000; % Number of training epochs
+weights_v = zeros(H,K,num_of_epoch); % Array to store weights of hidden layer over epochs
+weights_w = zeros(D,H,num_of_epoch); % Array to store weights of input layer over epochs
+y_epoch = zeros(K, num_of_instances, num_of_epoch); % Array to store output over epochs for training instances
+accuracy_training = zeros(num_of_epoch,1); % Array to store training accuracy over epochs
+accuracy_test = zeros(num_of_epoch,1); % Array to store test accuracy over epochs
 
-num_of_instances = size (x_train1,2);
-num_of_instances_test = size (x_test1,2);
-
-x = x_train1;
-r = r_train1;
-
-
-
-
-x = [ones(1,num_of_instances);x];                   %% add bias as input (x_0). 
-x_test = [ones(1,num_of_instances_test);x_test1];    %% add bias as input (x_0). 
-
-
-D = size (x,1);
-K = size (r,1);  % number of output neurons = 3
-H = 5; % number of hidden neurons (including bias)
-w = rand(D,H);
-w = (w-0.5)*2*0.01;  % (-0.01,0.01)
-delta_w =zeros(D,H);
-
-v = rand(H,K);
-v = (v-0.5)*2*0.01;  % (-0.01,0.01)
-delta_v =zeros(H,K);
-
-lr = 0.05;  % learning rate
-num_of_instances = size (x,2);
-num_of_epoch = 20000;
-weights_v = zeros(H,K,num_of_epoch);
-weights_w = zeros(D,H,num_of_epoch);
-y_epoch = zeros(K, num_of_instances, num_of_epoch);
-accuracy_training = zeros(num_of_epoch,1);
-accuracy_test= zeros(num_of_epoch,1);
-for e=1:1:num_of_epoch
-    for iter=1:1:num_of_instances
-        instance = floor(rand * num_of_instances + 1); %% select the instance randomly 
-        o = (w')*x(:,instance);
-        z = sigmoid_hidden (o); 
-        o = (v')*z;            
-        y = softmax_output(o);  % use softmax for multiple output units (number of classes > 2)
-        for i=1:1:K
-            for h=1:1:H
-              delta_v(h,i) = 0;
-            end
-        end
-        for i=1:1:K
-            for h=1:1:H
-              delta_v(h,i) = lr*(r(i,instance)-y(i))*z(h);
-            end
-        end        
-        for h = 1:1:H
-            for j=1:1:D
-                delta_w(j,h) = 0;
-                for i = 1:1:K
-                    delta_w(j,h) = delta_w(j,h)+ (r(i,instance)-y(i))*v(h,i);
-                end
-                delta_w(j,h) = lr*delta_w(j,h)*z(h)*(1-z(h))*x(j,instance);
-            end
-        end
-        for i = 1:1:K
-            for h=1:1:H
-                v(h,i) = v(h,i) + delta_v(h,i);
-            end
-        end
-        for h = 1:1:H
-            for j=1:1:D
-                w(j,h) = w(j,h) + delta_w(j,h);
-            end
-        end        
+% Training
+for e = 1:num_of_epoch % Loop over epochs
+    for iter = 1:num_of_instances % Loop over training instances
+        instance = floor(rand * num_of_instances + 1); % Randomly select an instance
+        o = w' * x(:,instance); % Compute input to hidden layer
+        z = sigmoid_hidden(o); % Apply activation function to hidden layer
+        o = v' * z; % Compute input to output layer
+        y = softmax_output(o); % Apply activation function to output layer
+        delta_v = lr * (r(:,instance) - y) * z'; % Compute weight change for hidden-output layer
+        delta_w = lr * (v * (r(:,instance) - y) .* z .* (1 - z)) * x(:,instance)'; % Compute weight change for input-hidden layer
+        v = v + delta_v; % Update weights for hidden-output layer
+        w = w + delta_w; % Update weights for input-hidden layer
     end
-    weights_v(:,:,e) = v;
-    weights_w(:,:,e) = w;
-    mse_training = 0;
-    for instance=1:1:num_of_instances
-        o = (w')*x(:,instance);
-        z = sigmoid_hidden (o); 
-        o = (v')*z;
-        y(:,instance) = softmax_output (o);
-        mse_instance = 0;
-        for i = 1:1:K
-            mse_instance = mse_instance + (r(i,instance) - y(i,instance))^2;
-        end
-        mse_training = mse_training + mse_instance/K;
-        
-        [M, index] = max (y(:,instance));   %% select the class for which the network outputs highest probability
-        if r(index,instance) == 1   %% check whether classificaiton is correct
-            accuracy_training(e) = accuracy_training(e) + 1;
+    weights_v(:,:,e) = v; % Save weights of hidden layer for current epoch
+    weights_w(:,:,e) = w; % Save weights of input layer for current epoch
+    mse_training = 0; % Initialize mean squared error for training
+    for instance = 1:num_of_instances % Loop over training instances
+        o = w' * x(:,instance); % Compute input to hidden layer
+        z = sigmoid_hidden(o); % Apply activation function to hidden layer
+        o = v' * z; % Compute input to output layer
+        y(:,instance) = softmax_output(o); % Apply activation function to output layer
+        mse_instance = sum((r(:,instance) - y(:,instance)).^2); % Compute squared error for current instance
+        mse_training = mse_training + mse_instance / K; % Accumulate squared error
+        [~, index] = max(y(:,instance)); % Determine predicted class
+        if r(index,instance) == 1 % Check if prediction matches actual class
+            accuracy_training(e) = accuracy_training(e) + 1; % Increment accuracy counter
         end
     end
-    error_training (1, e) = mse_training/num_of_instances;
-    accuracy_training(e) = accuracy_training(e)/num_of_instances*100;
-    mse_test = 0;
-    for instance=1:1:num_of_instances_test
-        o = (w')*x_test(:,instance);
-        z = sigmoid_hidden (o);
-        o = (v')*z;
-        y_test(:,instance) = softmax_output (o);
-        mse_instance = 0;
-        for i = 1:1:K
-            mse_instance = mse_instance + (r_test1(i,instance) - y_test(i,instance))^2;
-        end
-        mse_test = mse_test + mse_instance/K;
-        [M, index] = max (y_test(:,instance));   %% select the class for which the network outputs highest probability
-        if r_test1(index,instance) == 1   %% check whether classificaiton is correct
-            accuracy_test(e) = accuracy_test(e) + 1;
+    error_training(e) = mse_training / num_of_instances; % Compute mean squared error for training
+    accuracy_training(e) = accuracy_training(e) / num_of_instances * 100; % Compute accuracy for training
+    mse_test = 0; % Initialize mean squared error for test
+    for instance = 1:num_of_instances_test % Loop over test instances
+        o = w' * x_test(:,instance); % Compute input to hidden layer for test instance
+        z = sigmoid_hidden(o); % Apply activation function to hidden layer for test instance
+        o = v' * z; % Compute input to output layer for test instance
+        y_test(:,instance) = softmax_output(o); % Apply activation function to output layer for test instance
+        mse_instance = sum((r_test1(:,instance) - y_test(:,instance)).^2); % Compute squared error for current instance
+        mse_test = mse_test + mse_instance / K; % Accumulate squared error
+        [~, index] = max(y_test(:,instance)); % Determine predicted class for test instance
+        if r_test1(index,instance) == 1 % Check if prediction matches actual class for test instance
+            accuracy_test(e) = accuracy_test(e) + 1; % Increment accuracy counter
         end
     end
-    error_test (1, e) = mse_test/num_of_instances_test;    
-    accuracy_test(e) = accuracy_test(e)/num_of_instances_test*100;
-    if (error_training (1, e) < 0.000025)
-        %         if (error_training (1, e) < 0.03) && (error_test (1, e) < 0.01)
-        break;   % little error for training and test data achieved. terminate training
+    error_test(e) = mse_test / num_of_instances_test; % Compute mean squared error for test
+    accuracy_test(e) = accuracy_test(e) / num_of_instances_test * 100; % Compute accuracy for test
+    if error_training(e) < 0.000025 % Check if training error is below threshold
+        break; % Exit training loop if condition met
     end
-    if (mod(e,1000) == 0)
-        disp(e);
+    if mod(e,1000) == 0 % Check if current epoch is a multiple of 1000
+        disp(e); % Display current epoch
     end
 end
 
-figure, 
-plot (accuracy_training(1:e));
-xlabel("epochs");
-ylabel("accuracy training (%)");
+% Plot accuracy over epochs for training and test datasets
+figure
+plot(accuracy_training(1:e));
+xlabel('epochs');
+ylabel('accuracy training (%)');
 ylim([0 100]);
 
-figure, 
-plot (accuracy_test(1:e));
-xlabel("epochs");
-ylabel("accuracy test(%)");
+figure
+plot(accuracy_test(1:e));
+xlabel('epochs');
+ylabel('accuracy test(%)');
 ylim([0 100]);
 
+% Patternnet comparison
 net = patternnet(10);
 net = train(net,x_train1,r_train1);
 YPredicted = net(x_train1);
 YPredicted(:,1:10)
-
-plotconfusion(r_train1,YPredicted)
-
+plotconfusion(r_train1,YPredicted);
 hold on
 
-figure,
-title("MSE through epochs");
-plot (1:e, error_training(1,1:e), 'b');
+% Plot MSE through epochs
+figure
+plot(1:e, error_training(1:e), 'b');
 hold on
-plot (1:e, error_test(1,1:e)), 'r';
-xlabel("epochs");
-ylabel("MSE");
-figure, 
-plot (x_train1(1,1:100), x_train1(2,1:100), 'k+');
-hold on
-plot (x_train1(1,101:200), x_train1(2,101:200), 'k*');
-hold on
-plot (x_train1(1,201:300), x_train1(2,201:300), 'ko');
-xlim([0 2.5]);
-ylim([0 2.5]);
-for i = 0:0.05:2.5
-    for j = 0:0.05:2.5
-        x_grid = [1; i ; j]; %% [x0=1 ; x1 ; x2]
-        o = (w')* x_grid;
-        z = sigmoid_hidden (o); 
-        o = (v')*z;
-        y = softmax_output (o); 
-        [M, index] = max (y);   %% select the class for which the network outputs highest probability
-        if index == 1
-            plot (i , j, 'b.');
-            hold on
-        elseif index == 2
-            plot (i , j, 'r.');
-            hold on
-        elseif index == 3
-            plot (i , j, 'g.');
-            hold on
-        end
-    end
-end
-title ("Decision boundaries and training dataset");
+plot(1:e, error_test(1:e), 'r');
+xlabel('epochs');
+ylabel('MSE');
 
+% Plot decision boundaries and datasets for training and test datasets
+figure
+plot_decision_boundaries(x_train1, r_train1, weights_w(:,:,e), weights_v(:,:,e), 'Training Dataset');
+figure
+plot_decision_boundaries(x_test1, r_test1, weights_w(:,:,e), weights_v(:,:,e), 'Test Dataset');
 
-figure, 
-plot (x_test1(1,1:100), x_test1(2,1:100), 'k+');
-hold on
-plot (x_test1(1,101:200), x_test1(2,101:200), 'k*');
-hold on
-plot (x_test1(1,201:300), x_test1(2,201:300), 'ko');
-xlim([0 2.5]);
-ylim([0 2.5]);
-for i = 0:0.05:2.5
-    for j = 0:0.05:2.5
-        x_grid = [1; i ; j]; %% [x0=1 ; x1 ; x2]
-        o = (w')* x_grid;
-        z = sigmoid_hidden (o); 
-        o = (v')*z;
-        y = softmax_output (o); 
-        [M, index] = max (y);   %% select the class for which the network outputs highest probability
-        if index == 1
-            plot (i , j, 'b.');
-            hold on
-        elseif index == 2
-            plot (i , j, 'r.');
-            hold on
-        elseif index == 3
-            plot (i , j, 'g.');
-            hold on
-        end
-    end
-end
-title ("Decision boundaries and test (validation) dataset");
+% Plot synapse weights connected to hidden and output neurons for each class
+plot_synapse_weights(weights_w, weights_v, H, K);
 
-
-for h = 2:1:H   % exclude the sypases to bias z0
-    plot_data_w(h).weights = zeros (D,e);
-    for j = 1:1:D
-        for epo= 1:1:e
-            plot_data_w(h).weights(j,epo) = weights_w(j,h,epo);
-        end
-    end
-end
-
-for h = 2:1:H   % exclude the sypases to bias z0
-    figure,
-    for j = 1:1:D   
-        plot (plot_data_w(h).weights(j,:));
-        hold on;
-    end
-    title(['Synapses connected to Hidden Layer - Neuron ', num2str(h)-1]);
-    ylabel ('weights');
-    xlabel('epochs');
-end
-
-
-for i = 1:1:K  
-    plot_data_v(i).weights = zeros (H,e);
-    for h = 1:1:H
-        for epo= 1:1:e
-            plot_data_v(i).weights(h,epo) = weights_v(h,i,epo);
-        end
-    end
-end
-
-
-for i = 1:1:K   
-    figure,
-    for h = 1:1:H   
-        plot (plot_data_v(i).weights(h,:));
-        hold on;
-    end
-    title(['Synapses connected to Output Neuron', num2str(i)]);
-    ylabel ('weights');
-    xlabel('epochs');
-end
-
-
-
-
-
-
+% Helper functions
 function z = sigmoid_hidden(o)
-    for i=1:1:size (o,1)
-        z(i,1) = 1/(1+exp(-o(i,1)));  
-    end
-    z(1,1) = 1;  % z0 bias = 1 always
-end
-
-function y = sigmoid_output(o)
-    for i=1:1:size (o,1)
-        y(i,1) = 1/(1+exp(-o(i,1)));  
-    end
-end
-
-function y = threshold(o)
-    y = o > 0.5;  
+    z = 1 ./ (1 + exp(-o)); % Apply sigmoid activation function to input
+    z(1) = 1; % Set bias neuron to 1
 end
 
 function y = softmax_output(o)
-    denominator = 0;
-    for i=1:1:size (o,1)
-        denominator = denominator + exp(o(i,1));  
-    end    
-    for i=1:1:size (o,1)
-        y(i,1) = exp(o(i,1))/denominator;  
-    end
+    y = exp(o) ./ sum(exp(o)); % Apply softmax activation function to input
 end
 
+function plot_decision_boundaries(x_data, r_data, weights_w, weights_v, title_text)
+    plot(x_data(1,1:100), x_data(2,1:100), 'k+'); % Plot class 1 data points
+    hold on
+    plot(x_data(1,101:200), x_data(2,101:200), 'k*'); % Plot class 2 data points
+    hold on
+    plot(x_data(1,201:300), x_data(2,201:300), 'ko'); % Plot class 3 data points
+    xlim([0 2.5]); % Set X-axis limits
+    ylim([0 2.5]); % Set Y-axis limits
+    for i = 0:0.05:2.5 % Iterate over X-axis
+        for j = 0:0.05:2.5 % Iterate over Y-axis
+            x_grid = [1; i ; j]; % Create grid point
+            o = weights_w' * x_grid; % Compute input to hidden layer
+            z = sigmoid_hidden(o); % Apply activation function to hidden layer
+            o = weights_v' * z; % Compute input to output layer
+            y = softmax_output(o); % Apply activation function to output layer
+            [~, index] = max(y); % Determine predicted class
+            if index == 1 % Check predicted class
+                plot(i , j, 'b.'); % Plot grid point as class 1
+                hold on
+            elseif index == 2 % Check predicted class
+                plot(i , j, 'r.'); % Plot grid point as class 2
+                hold on
+            elseif index == 3 % Check predicted class
+                plot(i , j, 'g.'); % Plot grid point as class 3
+                hold on
+            end
+        end
+    end
+    title(title_text); % Set title
+end
 
+function plot_synapse_weights(weights_w, weights_v, H, K)
+    % Plot synapse weights for each hidden neuron
+    for h = 2:H % Exclude bias neuron
+        plot_data_w(h).weights = zeros(D,e);
+        for j = 1:D
+            for epo = 1:e
+                plot_data_w(h).weights(j,epo) = weights_w(j,h,epo); % Store weights over epochs
+            end
+        end
+    end
+    for h = 2:H % Exclude bias neuron
+        figure
+        for j = 1:D
+            plot(plot_data_w(h).weights(j,:)); % Plot weight evolution over epochs
+            hold on;
+        end
+        title(['Synapses connected to Hidden Layer - Neuron ', num2str(h)-1]); % Set title
+        ylabel('weights'); % Set Y-axis label
+        xlabel('epochs'); % Set X-axis label
+    end
+
+    % Plot synapse weights for each output neuron
+    for i = 1:K
+        plot_data_v(i).weights = zeros(H,e);
+        for h = 1:H
+            for epo = 1:e
+                plot_data_v(i).weights(h,epo) = weights_v(h,i,epo); % Store weights over epochs
+            end
+        end
+    end
+    for i = 1:K
+        figure
+        for h = 1:H
+            plot(plot_data_v(i).weights(h,:)); % Plot weight evolution over epochs
+            hold on;
+        end
+        title(['Synapses connected to Output Neuron ', num2str(i)]); % Set title
+        ylabel('weights'); % Set Y-axis label
+        xlabel('epochs'); % Set X-axis label
+    end
+end
